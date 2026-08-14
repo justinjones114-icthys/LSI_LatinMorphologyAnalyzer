@@ -1,0 +1,27 @@
+{
+  "name": "@lingua-sacra/collatinus-analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A browser and Node runtime for the full Collatinus Latin morphological analyzer.",
+  "exports": {
+    ".": "./dist/index.js",
+    "./node": "./dist/node-loader.js",
+    "./browser": "./dist/browser-loader.js"
+  },
+  "bin": {
+    "lingua-collatinus": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run build && npm test",
+    "demo": "vite --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "collatinus": {
+    "repository": "https://github.com/biblissima/collatinus.git",
+    "commit": "a0eb15bb0acc"
+  },
+  "pycollatinus": {
+    "version": "0.1.6"
+  }
+}
