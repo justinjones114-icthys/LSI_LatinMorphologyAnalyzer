@@ -47,6 +47,15 @@ test("analyzes regular perfect verbs", async () => {
   assert.ok(amo.analyses.some((analysis) => analysis.morphology === "perfect indicative active 3rd singular"));
 });
 
+test("links normalized u/v lemmas to English glosses", async () => {
+  for (const [surface, lemmaId] of [["vidit", "uideo"], ["vita", "uita"], ["vocat", "uoco"]] as const) {
+    const result = await analyzer.analyze(surface);
+    const lemma = result.lemmas.find((candidate) => candidate.id === lemmaId);
+    assert.ok(lemma, `${surface} should analyze as ${lemmaId}`);
+    assert.ok(lemma.dictionary.some((definition) => /[a-z]{3}/i.test(definition)), `${lemmaId} should have an English gloss`);
+  }
+});
+
 test("analyzes many forms into a normalized static index", async () => {
   const index = await analyzer.analyzeMany(["Erat", "principio", "erat"]);
   assert.deepEqual(Object.keys(index), ["erat", "principio"]);

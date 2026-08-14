@@ -65,11 +65,37 @@ def load_translations(path: Path) -> dict[str, list[str]]:
 
 
 def definitions(lemma_id: str, headword: str, translations: dict[str, list[str]]) -> list[str]:
-    found = []
-    for candidate in (lemma_id, headword, lemma_id.lower(), headword.lower(), re.sub(r"\d+$", "", lemma_id)):
-        for definition in translations.get(candidate, []):
-            if definition not in found:
-                found.append(definition)
+    exact_candidates = (
+        lemma_id,
+        headword,
+        lemma_id.lower(),
+        headword.lower(),
+        re.sub(r"\d+$", "", lemma_id),
+    )
+
+    def collect(candidates) -> list[str]:
+        found = []
+        for candidate in candidates:
+            for definition in translations.get(candidate, []):
+                if definition not in found:
+                    found.append(definition)
+        return found
+
+    found = collect(exact_candidates)
+    if found:
+        return found[:2]
+
+    orthographic_candidates = []
+    for candidate in exact_candidates:
+        for variant in (
+            candidate.replace("u", "v").replace("U", "V"),
+            candidate.replace("i", "j").replace("I", "J"),
+            candidate.replace("u", "v").replace("U", "V").replace("i", "j").replace("I", "J"),
+        ):
+            if variant != candidate and variant not in orthographic_candidates:
+                orthographic_candidates.append(variant)
+
+    found = collect(orthographic_candidates)
     return found[:2]
 
 

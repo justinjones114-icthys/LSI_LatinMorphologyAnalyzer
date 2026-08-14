@@ -1,2 +1,2 @@
 pycollatinus==0.1.6
-Unidecode==1.3.8
+Unidecode==0.4.21
