@@ -12,6 +12,13 @@ lemmas and grammatical readings, and then open a separately sourced dictionary
 entry. The analyzer is a standalone repository so the same engine can also
 compile indexes for an entire digital library.
 
+The current pilot integration is complete: the analyzer supplies the Reader's
+morphology by building its per-text static index, while the same runtime remains
+available for future live browser analysis. Reader-specific concerns such as
+learner-facing abbreviations, contextual candidate ranking, source orthography
+restoration, and Lewis & Short rendering deliberately remain outside this
+package.
+
 ## What makes it different
 
 ### It is an analyzer, not a lookup table
@@ -38,7 +45,9 @@ and the possible verb reading; `gratiæ` retains genitive singular, dative
 singular, nominative plural, and its other supported interpretations.
 
 Candidates are ordered by Collatinus lemma frequency only as a stable default.
-That ordering is not presented as a contextual grammatical judgment. A reader
+Those counts come from the classical Latin texts of the LASLA corpus; they are
+not Vulgate-specific or Ecclesiastical Latin frequency measurements. The order
+is therefore not presented as a contextual grammatical judgment. A reader
 application can add an auditable contextual ranking layer while keeping every
 candidate available.
 
@@ -58,7 +67,7 @@ loader changes: filesystem reads in Node, `fetch` in a browser.
 
 ### Browser delivery is sharded and lazy
 
-The complete compiled data set is about 24 MB uncompressed, but a lookup does
+The complete compiled data set is about 25 MB uncompressed, but a lookup does
 not load it all. The browser first loads a small shared core, then caches only
 the two-letter radical and irregular shards and the hashed lemma shards required
 by the words a user actually requests.
@@ -80,11 +89,22 @@ Input normalization handles ligatures and common orthographic equivalences:
 combining marks. The original surface form is retained in the response while
 the normalized form is used for analysis and index keys.
 
+English-gloss linkage follows a separate, conservative rule. It first tries an
+exact Collatinus lemma/headword match. Only when that produces no English gloss
+does the compiler try controlled `u → v`, `i → j`, and combined orthographic
+variants. This recovers entries such as `uideo → video`, `uita → vita`, and
+`uoco → voco` without merging a variant into an available exact match.
+
 ### Morphology and dictionary content remain separate
 
-The analyzer includes Collatinus lemma metadata, noun gender, principal parts,
-frequency, and short Collatinus glosses. It does not bundle Lewis & Short or pretend that
-a morphological candidate is automatically the correct dictionary sense.
+The analyzer includes Collatinus lemma metadata, noun gender, generated verb
+principal parts, LASLA frequency counts, and short English glosses from the
+Collatinus data. Noun gender is compiled directly from the morphological
+indicator in `lemmes.la`/`lem_ext.la`; it is not guessed from the inflectional
+model or inferred from Lewis & Short.
+
+The analyzer does not bundle Lewis & Short or pretend that a morphological
+candidate is automatically the correct dictionary sense.
 
 The Lingua Sacra Reader links analyzer lemmas to separately generated Lewis &
 Short shards by exact normalized headword. This separation allows morphology,
@@ -98,7 +118,8 @@ The build has two layers:
 1. **Python compiler.** `scripts/compile_collatinus.py` reads a pinned Collatinus
    checkout through `pycollatinus`, extracts the lemma models, radicals,
    endings, morphology labels, irregulars, assimilation rules, contractions,
-   and suffixes, and writes stable, compact JSON records.
+   suffixes, noun genders, frequency counts, and English glosses, and writes
+   stable, compact JSON records.
 2. **TypeScript runtime.** `src/analyzer.ts` reconstructs the relevant
    Collatinus matching process over those records. `FileSystemDataSource` and
    `FetchDataSource` provide Node and browser delivery without changing the
@@ -107,6 +128,8 @@ The build has two layers:
 The source revisions used to generate the checked-in data are recorded in
 `sources.lock.json`. The current data was compiled from Collatinus commit
 `a0eb15bb0acce74b2baf3d4a4adcea9c4f63aaf5` with `pycollatinus` 0.1.6.
+The checked-in manifest uses analyzer schema version 2, which added explicit
+noun gender to each lemma record.
 
 For each lookup, the runtime:
 
@@ -231,7 +254,8 @@ Each result contains:
 - whether the form was recognized;
 - the total analysis count;
 - every matching lemma with its headword, generated dictionary heading, part
-  of speech, model, frequency, and short glosses; and
+  of speech, noun gender, inflectional model, LASLA frequency, and short English
+  glosses; and
 - every morphology with its numeric Collatinus ID, English label, matched stem
   and ending, and whether it came from a regular, irregular, or Roman-numeral
   rule.
@@ -240,14 +264,43 @@ This separation lets consuming applications log a surface-form encounter,
 display all morphology, attach dictionary records, and rank candidates in
 context without rewriting the analyzer's source data.
 
+The public response preserves full English morphology labels such as
+`perfect indicative active 3rd singular`. Compact labels such as
+`perf. indic. act. 3rd sing.` are a presentation concern and are not stored in
+the analyzer data.
+
+## Integration contract
+
+The analyzer owns:
+
+- orthographic normalization and morphology lookup;
+- all structurally valid lemma-analysis pairs;
+- lemma metadata, noun gender, generated verb headings, frequency, and short
+  glosses;
+- deterministic live and batch analysis; and
+- browser- and filesystem-backed loading of the same compiled data.
+
+A consuming reader owns:
+
+- restoration of the source text's displayed `v/u`, `j/i`, and ligature choices;
+- learner-facing declension, conjugation, and morphology abbreviations;
+- contextual ranking or reviewed overrides, without deleting alternatives;
+- dictionary attachment and rendering; and
+- lookup logging or learner-model behavior.
+
+For a growing library, the intended deployment pattern is to run
+`analyzeMany()` at build time for each text and ship that small per-text index.
+The live browser analyzer remains available as a fallback and for texts that
+have not yet been indexed. Both paths return the same `AnalysisResult` contract.
+
 ## Validation and current scope
 
 The automated tests cover irregular forms of `sum`, ambiguous noun/verb forms,
 Vulgate ligatures, noun-case ambiguity, regular perfect verbs, principal-part
-generation, deduplication, and static-index consistency. Against the current
-three-chapter Reader pilot, the analyzer recognizes 791 of 794 unique forms
-(99.6%). That is a pilot measurement, not a claim of universal Ecclesiastical
-Latin coverage.
+generation, noun gender, controlled `u/v` English-gloss linkage,
+deduplication, and static-index consistency. Against the current three-chapter
+Reader pilot, the analyzer recognizes 791 of 794 unique forms (99.6%). That is
+a pilot measurement, not a claim of universal Ecclesiastical Latin coverage.
 
 Important current boundaries:
 
