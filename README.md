@@ -82,8 +82,8 @@ the normalized form is used for analysis and index keys.
 
 ### Morphology and dictionary content remain separate
 
-The analyzer includes Collatinus lemma metadata, principal parts, frequency,
-and short Collatinus glosses. It does not bundle Lewis & Short or pretend that
+The analyzer includes Collatinus lemma metadata, noun gender, principal parts,
+frequency, and short Collatinus glosses. It does not bundle Lewis & Short or pretend that
 a morphological candidate is automatically the correct dictionary sense.
 
 The Lingua Sacra Reader links analyzer lemmas to separately generated Lewis &

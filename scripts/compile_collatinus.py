@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pycollatinus import Lemmatiseur
+from pycollatinus.ch import atone, deramise
 from pycollatinus.parser import Parser
 
 
@@ -62,6 +63,27 @@ def load_translations(path: Path) -> dict[str, list[str]]:
         if definition and definition not in result[key]:
             result[key].append(definition)
     return dict(result)
+
+
+def load_genders(paths: tuple[Path, ...]) -> dict[str, str]:
+    result = {}
+    for path in paths:
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("!") or "|" not in line:
+                continue
+            fields = line.split("|")
+            if len(fields) < 5:
+                continue
+            lemma_id = atone(deramise(fields[0].split("=", 1)[0]))
+            indicator = fields[4]
+            gender = "".join(
+                code for code in ("m", "f", "n")
+                if re.search(rf"(?:^|[\s,]){code}\.", indicator)
+            )
+            if gender:
+                result[lemma_id] = gender
+    return result
 
 
 def definitions(lemma_id: str, headword: str, translations: dict[str, list[str]]) -> list[str]:
@@ -175,6 +197,7 @@ def main() -> None:
             translations.setdefault(key, []).extend(
                 value for value in values if value not in translations.get(key, [])
             )
+    genders = load_genders((data_dir / "lemmes.la", data_dir / "lem_ext.la"))
     output = args.output.resolve()
     if output.exists():
         if output.name != "data":
@@ -190,6 +213,7 @@ def main() -> None:
             "quantitative": lemma.grq(),
             "dictionaryHeadword": dictionary_headword(lemma),
             "partOfSpeech": POS_LABELS.get(lemma.pos(), lemma.pos() or "unknown"),
+            "gender": genders.get(lemma_id, "") if lemma.pos() == "n" else "",
             "model": lemma.grModele(),
             "frequency": lemma.nbOcc(),
             "dictionary": definitions(lemma_id, lemma.gr(), translations),
@@ -260,7 +284,7 @@ def main() -> None:
         write_json(output / "lemmas" / f"{index:03d}.json", bucket)
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "collatinusCommit": commit(args.collatinus_root),
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "counts": {

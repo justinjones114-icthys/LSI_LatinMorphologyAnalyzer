@@ -34,6 +34,7 @@ test("normalizes Vulgate orthography and retains all gratiae readings", async ()
   assert.ok(result.analysisCount >= 8);
   const grace = result.lemmas.find((lemma) => lemma.id.toLowerCase() === "gratia");
   assert.ok(grace);
+  assert.equal(grace.gender, "f");
   assert.ok(grace.analyses.some((analysis) => analysis.morphology === "genitive singular"));
   assert.ok(grace.analyses.some((analysis) => analysis.morphology === "dative singular"));
   assert.ok(grace.analyses.some((analysis) => analysis.morphology === "nominative plural"));

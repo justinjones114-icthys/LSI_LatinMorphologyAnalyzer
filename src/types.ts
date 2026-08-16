@@ -13,6 +13,7 @@ export type LemmaRecord = {
   quantitative: string;
   dictionaryHeadword: string;
   partOfSpeech: string;
+  gender: string;
   model: string;
   frequency: number;
   dictionary: string[];

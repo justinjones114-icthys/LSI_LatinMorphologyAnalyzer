@@ -162,6 +162,7 @@ export class CollatinusAnalyzer {
           quantitative: surface.toUpperCase(),
           dictionaryHeadword: surface.toUpperCase(),
           partOfSpeech: "numeral",
+          gender: "",
           model: "inv",
           frequency: 0,
           dictionary: [],
